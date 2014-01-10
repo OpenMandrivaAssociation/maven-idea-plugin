@@ -1,108 +1,106 @@
+%{?_javapackages_macros:%_javapackages_macros}
 Name:           maven-idea-plugin
 Version:        2.2
-Release:        5
+Release:        14.0%{?dist}
 Summary:        Maven IDEA Plugin
 
-Group:          Development/Java
+
 License:        ASL 2.0
 URL:            http://maven.apache.org/plugins/%{name}
 # svn export http://svn.apache.org/repos/asf/maven/plugins/tags/maven-idea-plugin-2.2
 # tar caf maven-idea-plugin-2.2.tar.xz maven-idea-plugin-2.2
 Source0:        %{name}-%{version}.tar.xz
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+Source1:        http://apache.org/licenses/LICENSE-2.0.txt
 
 BuildArch: noarch
 
-BuildRequires: java-devel >= 0:1.6.0
-BuildRequires: plexus-utils
-BuildRequires: ant-nodeps
-BuildRequires: maven2
-BuildRequires: maven-wagon
-BuildRequires: plexus-container-default
-BuildRequires: maven-install-plugin
-BuildRequires: maven-compiler-plugin
-BuildRequires: maven-plugin-plugin
-BuildRequires: maven-resources-plugin
-BuildRequires: maven-surefire-maven-plugin
-BuildRequires: maven-surefire-provider-junit
-BuildRequires: maven-jar-plugin
-BuildRequires: maven-javadoc-plugin
-BuildRequires: maven-shared-plugin-testing-harness
-BuildRequires: dom4j
-Requires: ant-nodeps
-Requires: maven2
-Requires: jpackage-utils
-Requires: java
-Requires(post): jpackage-utils
-Requires(postun): jpackage-utils
+BuildRequires:  maven-local
+BuildRequires:  mvn(dom4j:dom4j)
+BuildRequires:  mvn(junit:junit)
+BuildRequires:  mvn(org.apache.maven.plugins:maven-plugins)
+BuildRequires:  mvn(org.apache.maven.shared:maven-plugin-testing-harness)
+BuildRequires:  mvn(org.apache.maven.wagon:wagon-provider-api)
+BuildRequires:  mvn(org.apache.maven:maven-artifact)
+BuildRequires:  mvn(org.apache.maven:maven-artifact-manager)
+BuildRequires:  mvn(org.apache.maven:maven-compat)
+BuildRequires:  mvn(org.apache.maven:maven-model)
+BuildRequires:  mvn(org.apache.maven:maven-plugin-api)
+BuildRequires:  mvn(org.apache.maven:maven-project)
+BuildRequires:  mvn(org.codehaus.plexus:plexus-container-default)
+BuildRequires:  mvn(org.codehaus.plexus:plexus-utils)
 
-Obsoletes: maven2-plugin-idea <= 0:2.0.8
-Provides: maven2-plugin-idea = 1:%{version}-%{release}
+Obsoletes:      maven2-plugin-idea <= 0:2.0.8
+Provides:       maven2-plugin-idea = 1:%{version}-%{release}
 
 %description
 The IDEA Plugin is used to generate files (ipr, iml, and iws) for a
 project so you can work on it using the IDE, IntelliJ IDEA.
 
-
 %package javadoc
-Group:          Development/Java
 Summary:        API documentation for %{name}
-Requires:       jpackage-utils
 
 %description javadoc
 %{summary}.
 
-
 %prep
-%setup -q #You may need to update this according to your Source0
+%setup -q 
+cp %{SOURCE1} .
+%pom_add_dep org.apache.maven:maven-compat
 
 %build
-export MAVEN_REPO_LOCAL=$(pwd)/.m2/repository
 # we skip test because even with binary mvn release these fail for
 # various reasons.
-mvn-jpp -e \
-        -Dmaven2.jpp.mode=true \
-        -Dmaven.repo.local=$MAVEN_REPO_LOCAL \
-        -Dmaven.test.skip=true \
-        install javadoc:javadoc
+%mvn_build -f
 
 %install
-rm -rf %{buildroot}
+%mvn_install
 
-# jars
-install -Dpm 644 target/%{name}-%{version}.jar   %{buildroot}%{_javadir}/%{name}-%{version}.jar
+%files -f .mfiles
+%dir %{_javadir}/%{name}
+%doc LICENSE-2.0.txt
 
-(cd %{buildroot}%{_javadir} && for jar in *-%{version}*; \
-    do ln -sf ${jar} `echo $jar| sed "s|-%{version}||g"`; done)
+%files javadoc -f .mfiles-javadoc
+%doc LICENSE-2.0.txt
 
-# poms
-install -Dpm 644 pom.xml %{buildroot}%{_mavenpomdir}/JPP-%{name}.pom
+%changelog
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.2-14
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
 
-%add_to_maven_depmap org.apache.maven.plugins %{name} %{version} JPP %{name}
+* Mon Apr 29 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 2.2-13
+- Simplify build dependencies
+- Replace POM patch with POM macro
+- Update to current packaging guidelines
 
-# javadoc
-install -dm 755 %{buildroot}%{_javadocdir}/%{name}-%{version}
-cp -pr target/site/api*/* %{buildroot}%{_javadocdir}/%{name}-%{version}/
-ln -s %{name}-%{version} %{buildroot}%{_javadocdir}/%{name}
-rm -rf target/site/api*
+* Tue Feb 12 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 2.2-12
+- Use default packaging layout
 
-%post
-%update_maven_depmap
+* Tue Feb 12 2013 Michal Srb <msrb@redhat.com> - 2.2-11
+- Build with xmvn
 
-%postun
-%update_maven_depmap
+* Wed Feb 06 2013 Java SIG <java-devel@lists.fedoraproject.org> - 2.2-10
+- Update for https://fedoraproject.org/wiki/Fedora_19_Maven_Rebuild
+- Replace maven BuildRequires with maven-local
 
-%clean
-rm -rf %{buildroot}
+* Fri Nov 23 2012 Stanislav Ochotnicky <sochotnicky@redhat.com> - 2.2-9
+- Add license text to packages (#879379)
 
-%files
-%defattr(-,root,root,-)
-%{_javadir}/*
-%{_mavenpomdir}/*
-%{_mavendepmapfragdir}/*
+* Thu Jul 19 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.2-8
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
 
-%files javadoc
-%defattr(-,root,root,-)
-%{_javadocdir}/%{name}-%{version}
-%{_javadocdir}/%{name}
+* Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.2-7
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
 
+* Mon Dec 5 2011 Alexander Kurtakov <akurtako@redhat.com> 2.2-6
+- Fix working in pure maven 3 environment.
+
+* Fri Jun 17 2011 Alexander Kurtakov <akurtako@redhat.com> 2.2-5
+- Build with maven 3.x
+
+* Tue Feb 08 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.2-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
+
+* Tue Sep  7 2010 Stanislav Ochotnicky <sochotnicky@redhat.com> - 2.2-2
+- Add dom4j to BRs
+
+* Fri May 28 2010 Stanislav Ochotnicky <sochotnicky@redhat.com> - 2.2-1
+- Initial package
