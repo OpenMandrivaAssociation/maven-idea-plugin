@@ -6,7 +6,7 @@ Summary:        Maven IDEA Plugin
 
 
 License:        ASL 2.0
-URL:            http://maven.apache.org/plugins/%{name}
+URL:            https://maven.apache.org/plugins/%{name}
 # svn export http://svn.apache.org/repos/asf/maven/plugins/tags/maven-idea-plugin-2.2
 # tar caf maven-idea-plugin-2.2.tar.xz maven-idea-plugin-2.2
 Source0:        %{name}-%{version}.tar.xz
